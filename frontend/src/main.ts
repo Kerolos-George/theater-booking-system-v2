@@ -1,60 +1,76 @@
 import './style.css'
-import heroImg from './assets/hero.png'
-import typescriptLogo from './assets/typescript.svg'
-import viteLogo from './assets/vite.svg'
-import { setupCounter } from './counter.ts'
+import { isLoggedIn } from './auth'
+import { bindNav } from './components/nav'
+import { bindBookingsPage, renderBookingsPage } from './pages/bookings'
+import { bindConfirmationPage, renderConfirmationPage } from './pages/confirmation'
+import { renderHomePage } from './pages/home'
+import { bindLoginPage, renderLoginPage } from './pages/login'
+import { bindPaymentPage, renderPaymentPage } from './pages/payment'
+import { bindSectionsPage, renderSectionsPage } from './pages/sections'
+import { bindSeatsPage, renderSeatsPage } from './pages/seats'
+import { bindSignupPage, renderSignupPage } from './pages/signup'
+import { bindSummaryPage, renderSummaryPage } from './pages/summary'
 
-document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-<section id="center">
-  <div class="hero">
-    <img src="${heroImg}" class="base" width="170" height="179">
-    <img src="${typescriptLogo}" class="framework" alt="TypeScript logo"/>
-    <img src="${viteLogo}" class="vite" alt="Vite logo" />
-  </div>
-  <div>
-    <h1>Get started</h1>
-    <p>Edit <code>src/main.ts</code> and save to test <code>HMR</code></p>
-  </div>
-  <button id="counter" type="button" class="counter"></button>
-</section>
+const app = document.querySelector<HTMLDivElement>('#app')!
 
-<div class="ticks"></div>
+const PROTECTED_ROUTES = ['/sections', '/seats', '/summary', '/payment', '/confirmation', '/bookings']
 
-<section id="next-steps">
-  <div id="docs">
-    <svg class="icon" role="presentation" aria-hidden="true"><use href="/icons.svg#documentation-icon"></use></svg>
-    <h2>Documentation</h2>
-    <p>Your questions, answered</p>
-    <ul>
-      <li>
-        <a href="https://vite.dev/" target="_blank">
-          <img class="logo" src="${viteLogo}" alt="" />
-          Explore Vite
-        </a>
-      </li>
-      <li>
-        <a href="https://www.typescriptlang.org" target="_blank">
-          <img class="button-icon" src="${typescriptLogo}" alt="">
-          Learn more
-        </a>
-      </li>
-    </ul>
-  </div>
-  <div id="social">
-    <svg class="icon" role="presentation" aria-hidden="true"><use href="/icons.svg#social-icon"></use></svg>
-    <h2>Connect with us</h2>
-    <p>Join the Vite community</p>
-    <ul>
-      <li><a href="https://github.com/vitejs/vite" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#github-icon"></use></svg>GitHub</a></li>
-      <li><a href="https://chat.vite.dev/" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#discord-icon"></use></svg>Discord</a></li>
-      <li><a href="https://x.com/vite_js" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#x-icon"></use></svg>X.com</a></li>
-      <li><a href="https://bsky.app/profile/vite.dev" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#bluesky-icon"></use></svg>Bluesky</a></li>
-    </ul>
-  </div>
-</section>
+function getRoute(): string {
+  const hash = window.location.hash.replace(/^#/, '') || '/'
+  return hash.startsWith('/') ? hash : `/${hash}`
+}
 
-<div class="ticks"></div>
-<section id="spacer"></section>
-`
+function requiresAuth(route: string): boolean {
+  return PROTECTED_ROUTES.some((r) => route.startsWith(r))
+}
 
-setupCounter(document.querySelector<HTMLButtonElement>('#counter')!)
+function render(): void {
+  let route = getRoute()
+
+  if (requiresAuth(route) && !isLoggedIn()) {
+    window.location.hash = '#/login'
+    route = '/login'
+  }
+
+  if (route.startsWith('/signup')) {
+    document.title = 'بريميير ثياتر - إنشاء حساب'
+    app.innerHTML = renderSignupPage()
+    bindSignupPage(app)
+  } else if (route.startsWith('/login')) {
+    document.title = 'بريميير ثياتر - تسجيل الدخول'
+    app.innerHTML = renderLoginPage()
+    bindLoginPage(app)
+  } else if (route.startsWith('/bookings')) {
+    document.title = 'بريميير ثياتر - حجوزاتي'
+    app.innerHTML = renderBookingsPage()
+    bindBookingsPage(app)
+  } else if (route.startsWith('/confirmation')) {
+    document.title = 'بريميير ثياتر - تأكيد الحجز'
+    app.innerHTML = renderConfirmationPage()
+    bindConfirmationPage(app)
+  } else if (route.startsWith('/payment')) {
+    document.title = 'بريميير ثياتر - الدفع'
+    app.innerHTML = renderPaymentPage()
+    bindPaymentPage(app)
+  } else if (route.startsWith('/summary')) {
+    document.title = 'بريميير ثياتر - ملخص الحجز'
+    app.innerHTML = renderSummaryPage()
+    bindSummaryPage(app)
+  } else if (route.startsWith('/seats')) {
+    document.title = 'بريميير ثياتر - اختيار المقاعد'
+    app.innerHTML = renderSeatsPage()
+    bindSeatsPage(app)
+  } else if (route.startsWith('/sections')) {
+    document.title = 'بريميير ثياتر - اختر القسم'
+    app.innerHTML = renderSectionsPage()
+    bindSectionsPage(app)
+  } else {
+    document.title = 'بريميير ثياتر - عِش التجربة المسرحية الأرقى'
+    app.innerHTML = renderHomePage()
+  }
+
+  bindNav(app)
+}
+
+window.addEventListener('hashchange', render)
+render()
