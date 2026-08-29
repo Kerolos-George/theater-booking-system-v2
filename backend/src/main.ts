@@ -30,6 +30,9 @@ async function bootstrap() {
     .addTag('User Auth', 'Signup / login with mobile number')
     .addTag('User Sections', 'Ground & balcony sections and seat maps')
     .addTag('User Bookings', 'Create booking, upload payment, view bookings')
+    .addTag('Admin Auth', 'Admin login')
+    .addTag('Admin Bookings', 'Review, confirm, cancel bookings')
+    .addTag('Admin Entry', 'Verify and redeem entry codes at the door')
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);

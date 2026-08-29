@@ -1,4 +1,5 @@
 import { PrismaClient, SectionType } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 import {
   LAYOUT_BY_SECTION_TYPE,
   RowBlockDefinition,
@@ -107,7 +108,21 @@ async function seedSection(type: SectionType, labelAr: string, visible: boolean,
   return section;
 }
 
+async function seedAdmin() {
+  const email = 'admin@gmail.com';
+  const passwordHash = await bcrypt.hash('admin123456', 10);
+
+  await prisma.admin.upsert({
+    where: { email },
+    update: { password: passwordHash, name: 'Admin' },
+    create: { email, password: passwordHash, name: 'Admin' },
+  });
+
+  console.log('Seeded admin account:', email);
+}
+
 async function main() {
+  await seedAdmin();
   await seedSection(SectionType.GROUND, 'الدور الأرضي', true, LAYOUT_BY_SECTION_TYPE.GROUND);
   await seedSection(SectionType.BALCONY, 'البالكون', true, LAYOUT_BY_SECTION_TYPE.BALCONY);
   console.log('Seeded ground + balcony layouts with per-row visibility support.');

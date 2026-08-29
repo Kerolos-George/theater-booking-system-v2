@@ -1,5 +1,6 @@
 import './style.css'
 import { isLoggedIn } from './auth'
+import { isAdminLoggedIn } from './admin/session'
 import { bindNav } from './components/nav'
 import { bindBookingsPage, renderBookingsPage } from './pages/bookings'
 import { bindConfirmationPage, renderConfirmationPage } from './pages/confirmation'
@@ -10,6 +11,9 @@ import { bindSectionsPage, renderSectionsPage } from './pages/sections'
 import { bindSeatsPage, renderSeatsPage } from './pages/seats'
 import { bindSignupPage, renderSignupPage } from './pages/signup'
 import { bindSummaryPage, renderSummaryPage } from './pages/summary'
+import { bindAdminLoginPage, renderAdminLoginPage } from './pages/admin/login'
+import { bindAdminBookingsPage, renderAdminBookingsPage } from './pages/admin/bookings'
+import { bindAdminEntryPage, renderAdminEntryPage } from './pages/admin/entry'
 
 const app = document.querySelector<HTMLDivElement>('#app')!
 
@@ -24,8 +28,46 @@ function requiresAuth(route: string): boolean {
   return PROTECTED_ROUTES.some((r) => route.startsWith(r))
 }
 
+function isAdminRoute(route: string): boolean {
+  return route.startsWith('/admin')
+}
+
 function render(): void {
   let route = getRoute()
+
+  if (isAdminRoute(route)) {
+    if (!route.startsWith('/admin/login') && !isAdminLoggedIn()) {
+      window.location.hash = '#/admin/login'
+      route = '/admin/login'
+    } else if (route.startsWith('/admin/login') && isAdminLoggedIn()) {
+      window.location.hash = '#/admin/bookings'
+      route = '/admin/bookings'
+    }
+
+    if (route.startsWith('/admin/login')) {
+      document.title = 'بريميير ثياتر - دخول الإدارة'
+      app.innerHTML = renderAdminLoginPage()
+      bindAdminLoginPage(app)
+      return
+    }
+
+    if (route.startsWith('/admin/bookings')) {
+      document.title = 'بريميير ثياتر - إدارة الحجوزات'
+      app.innerHTML = renderAdminBookingsPage()
+      bindAdminBookingsPage(app)
+      return
+    }
+
+    if (route.startsWith('/admin/entry')) {
+      document.title = 'بريميير ثياتر - التحقق من الكود'
+      app.innerHTML = renderAdminEntryPage()
+      bindAdminEntryPage(app)
+      return
+    }
+
+    window.location.hash = '#/admin/bookings'
+    return
+  }
 
   if (requiresAuth(route) && !isLoggedIn()) {
     window.location.hash = '#/login'

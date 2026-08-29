@@ -37,6 +37,17 @@ model User {
   @@map("users")
 }
 
+model Admin {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String   @default("Admin")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("admins")
+}
+
 model Section {
   id       String      @id @default(uuid())
   type     SectionType @unique
@@ -96,6 +107,7 @@ model Booking {
   whatsapp        String
   paymentProofUrl String?       @map("payment_proof_url")
   entryCode       String?       @map("entry_code")
+  entryCodeUsedAt DateTime?     @map("entry_code_used_at")
   totalAmount     Int           @map("total_amount")
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt @map("updated_at")
@@ -103,6 +115,8 @@ model Booking {
   heldSeats       Seat[]        @relation("HeldSeats")
 
   @@index([userId])
+  @@index([whatsapp])
+  @@index([entryCode])
   @@map("bookings")
 }
 
