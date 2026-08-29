@@ -30,6 +30,9 @@ function render(): void {
   if (requiresAuth(route) && !isLoggedIn()) {
     window.location.hash = '#/login'
     route = '/login'
+  } else if ((route.startsWith('/login') || route.startsWith('/signup')) && isLoggedIn()) {
+    window.location.hash = '#/sections'
+    route = '/sections'
   }
 
   if (route.startsWith('/signup')) {

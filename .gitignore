@@ -1,0 +1,53 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Environment (keep examples)
+.env
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Test / coverage
+coverage/
+.nyc_output/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+
+# Prisma
+backend/prisma/*.db
+backend/prisma/*.db-journal
+
+# Vite
+frontend/dist/
+frontend/dist-ssr/
+*.local
+
+# NestJS
+backend/dist/
+
+# Misc
+.cache/
+.temp/
+tmp/

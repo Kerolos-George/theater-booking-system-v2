@@ -1,4 +1,5 @@
-import { login } from '../auth'
+import { login } from '../api/auth.api'
+import { ApiError } from '../api/http'
 import { renderNav } from '../components/nav'
 
 function renderAuthShell(title: string, subtitle: string, formHtml: string, footerHtml: string): string {
@@ -64,6 +65,7 @@ export function renderLoginPage(): string {
         </div>
         <button
           type="submit"
+          id="loginSubmitBtn"
           class="w-full bg-primary text-on-primary font-headline-md text-headline-md py-md rounded-lg hover:bg-primary-fixed-dim transition-colors shadow-[0_4px_14px_rgba(242,202,80,0.4)] btn-primary-glow active:scale-[0.98]"
         >
           تسجيل الدخول
@@ -82,22 +84,30 @@ export function renderLoginPage(): string {
 export function bindLoginPage(root: HTMLElement): void {
   const form = root.querySelector<HTMLFormElement>('#loginForm')
   const errorEl = root.querySelector<HTMLDivElement>('#loginError')
+  const submitBtn = root.querySelector<HTMLButtonElement>('#loginSubmitBtn')
 
   form?.addEventListener('submit', (event) => {
     event.preventDefault()
+    if (!form || !submitBtn) return
 
     const mobile = (form.querySelector('#loginMobile') as HTMLInputElement).value
     const password = (form.querySelector('#loginPassword') as HTMLInputElement).value
-    const result = login(mobile, password)
 
-    if (!result.ok) {
-      if (errorEl) {
-        errorEl.textContent = result.error ?? 'حدث خطأ'
-        errorEl.classList.remove('hidden')
-      }
-      return
-    }
+    submitBtn.disabled = true
+    submitBtn.textContent = 'جاري الدخول...'
+    errorEl?.classList.add('hidden')
 
-    window.location.hash = '#/sections'
+    void login(mobile, password)
+      .then(() => {
+        window.location.hash = '#/sections'
+      })
+      .catch((err: unknown) => {
+        if (errorEl) {
+          errorEl.textContent = err instanceof ApiError ? err.message : 'حدث خطأ'
+          errorEl.classList.remove('hidden')
+        }
+        submitBtn.disabled = false
+        submitBtn.textContent = 'تسجيل الدخول'
+      })
   })
 }

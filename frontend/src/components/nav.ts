@@ -41,6 +41,7 @@ export function renderNav(options?: {
         </a>
         <nav class="hidden md:flex items-center gap-lg">
           <a class="${homeClass} font-body-md text-body-md hover:bg-white/5 transition-all duration-300" href="#/" data-link>الرئيسية</a>
+          ${loggedIn ? `<a class="text-on-surface-variant hover:text-primary font-body-md text-body-md hover:bg-white/5 transition-all duration-300" href="#/sections" data-link>احجز الآن</a>` : ''}
           ${loggedIn ? `<a class="${bookingsClass} font-body-md text-body-md hover:bg-white/5 transition-all duration-300" href="#/bookings" data-link>حجوزاتي</a>` : ''}
         </nav>
         <div class="flex items-center gap-md text-primary">

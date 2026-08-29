@@ -1,22 +1,16 @@
-import { getCurrentUser } from '../auth'
-import { generateBookingRef, upsertUnpaidBooking } from '../bookings'
+import { createBooking } from '../api/bookings.api'
+import { ApiError } from '../api/http'
+import { getSectionId, getSectionSlug, getSelectedSeats, setActiveBooking } from '../booking/session'
 import { renderNav } from '../components/nav'
 import { SECTION_LABELS, SEAT_PRICE } from '../constants'
 
-function getSelectedSeats(): string[] {
-  try {
-    const raw = sessionStorage.getItem('selectedSeats')
-    if (!raw) return []
-    const parsed = JSON.parse(raw) as unknown
-    return Array.isArray(parsed) ? parsed.filter((s): s is string => typeof s === 'string').sort() : []
-  } catch {
-    return []
-  }
+function getSelectedSeatsList(): string[] {
+  return getSelectedSeats()
 }
 
 function getSectionTitle(): string {
-  const id = sessionStorage.getItem('selectedSection') || 'ground'
-  return SECTION_LABELS[id] ?? '—'
+  const slug = getSectionSlug()
+  return SECTION_LABELS[slug] ?? '—'
 }
 
 function renderProgress(): string {
@@ -83,7 +77,7 @@ function renderEmptyState(): string {
 }
 
 export function renderSummaryPage(): string {
-  const seats = getSelectedSeats()
+  const seats = getSelectedSeatsList()
   const sectionTitle = getSectionTitle()
   const total = seats.length * SEAT_PRICE
   const ticketWord = seats.length === 1 ? 'تذكرة' : 'تذاكر'
@@ -147,6 +141,7 @@ export function renderSummaryPage(): string {
             <div class="glass-card summary-card rounded-xl p-lg md:p-xl">
               <h2 class="font-headline-md text-headline-md text-primary mb-lg">بيانات التواصل</h2>
               <form id="summaryForm" class="space-y-lg">
+                <div id="summaryError" class="hidden bg-error-container/20 border border-error-container text-on-error-container rounded-lg p-md font-body-md text-body-md"></div>
                 <div class="space-y-sm group gold-glow rounded-lg transition-all">
                   <label class="block font-label-md text-label-md text-on-surface-variant" for="fullName">الاسم بالكامل</label>
                   <div class="relative">
@@ -220,6 +215,8 @@ function updateAttendeePreview(root: HTMLElement): void {
 
 export function bindSummaryPage(root: HTMLElement): void {
   const form = root.querySelector<HTMLFormElement>('#summaryForm')
+  const errorEl = root.querySelector<HTMLDivElement>('#summaryError')
+  const submitBtn = form?.querySelector<HTMLButtonElement>('button[type="submit"]')
   if (!form) return
 
   form.querySelectorAll<HTMLInputElement>('input[data-seat]').forEach((input) => {
@@ -231,39 +228,47 @@ export function bindSummaryPage(root: HTMLElement): void {
 
     const fullName = (form.querySelector('#fullName') as HTMLInputElement).value.trim()
     const whatsapp = (form.querySelector('#whatsapp') as HTMLInputElement).value.trim()
-    const attendees: Record<string, string> = {}
+    const seatLabels = getSelectedSeatsList()
+    const sectionId = getSectionId()
 
-    form.querySelectorAll<HTMLInputElement>('input[data-seat]').forEach((input) => {
-      const seat = input.dataset.seat
-      if (seat) attendees[seat] = input.value.trim()
+    if (!sectionId || seatLabels.length === 0) {
+      window.location.hash = '#/sections'
+      return
+    }
+
+    const seats = seatLabels.map((label) => {
+      const input = form.querySelector<HTMLInputElement>(`input[data-seat="${label}"]`)
+      return { label, attendeeName: input?.value.trim() ?? '' }
     })
 
-    sessionStorage.setItem(
-      'bookingDetails',
-      JSON.stringify({ fullName, whatsapp, attendees }),
-    )
-
-    const user = getCurrentUser()
-    const sectionId = sessionStorage.getItem('selectedSection') || 'ground'
-    const seatsRaw = sessionStorage.getItem('selectedSeats')
-    const seats: string[] = seatsRaw ? (JSON.parse(seatsRaw) as string[]) : []
-
-    let bookingRef = sessionStorage.getItem('bookingRef')
-    if (!bookingRef) {
-      bookingRef = generateBookingRef()
-      sessionStorage.setItem('bookingRef', bookingRef)
+    if (submitBtn) {
+      submitBtn.disabled = true
+      submitBtn.textContent = 'جاري إنشاء الحجز...'
     }
+    errorEl?.classList.add('hidden')
 
-    if (user && seats.length > 0) {
-      upsertUnpaidBooking({
-        id: bookingRef,
-        userMobile: user.mobile,
-        sectionId,
-        seats,
-        details: { fullName, whatsapp, attendees },
+    void createBooking({ sectionId, contactName: fullName, whatsapp, seats })
+      .then((booking) => {
+        setActiveBooking(booking.id, booking.ref)
+        window.location.hash = '#/payment'
       })
-    }
-
-    window.location.hash = '#/payment'
+      .catch((err: unknown) => {
+        if (errorEl) {
+          if (err instanceof ApiError && err.status === 409) {
+            const body = err.body as { bookedSeats?: string[] }
+            const booked = body.bookedSeats?.join(', ')
+            errorEl.textContent = booked
+              ? `المقاعد التالية محجوزة: ${booked}`
+              : err.message
+          } else {
+            errorEl.textContent = err instanceof ApiError ? err.message : 'تعذر إنشاء الحجز'
+          }
+          errorEl.classList.remove('hidden')
+        }
+        if (submitBtn) {
+          submitBtn.disabled = false
+          submitBtn.textContent = 'متابعة للدفع'
+        }
+      })
   })
 }

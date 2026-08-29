@@ -1,3 +1,4 @@
+import { isLoggedIn } from '../auth'
 import { renderNav } from '../components/nav'
 
 const HERO_IMAGE =
@@ -13,6 +14,10 @@ const bookingSteps = [
 ] as const
 
 function renderHero(): string {
+  const loggedIn = isLoggedIn()
+  const ctaHref = loggedIn ? '#/sections' : '#/login'
+  const ctaLabel = loggedIn ? 'ابدأ الحجز الآن' : 'احجز تذكرتك الآن'
+
   return `
     <section class="relative min-h-[921px] flex items-center justify-center px-margin-mobile md:px-margin-desktop overflow-hidden">
       <div class="absolute inset-0 z-0">
@@ -38,11 +43,11 @@ function renderHero(): string {
         </p>
         <div class="mt-xl animate-fadeInUp [animation-delay:0.6s]">
           <a
-            href="#/login"
+            href="${ctaHref}"
             data-link
             class="bg-primary text-on-primary font-headline-md text-headline-md px-xl py-md rounded-lg inline-flex items-center justify-center gap-md hover:bg-primary-fixed-dim transition-all duration-300 glow-effect active:scale-95 group"
           >
-            <span>احجز تذكرتك الآن</span>
+            <span>${ctaLabel}</span>
             <span class="material-symbols-outlined group-hover:-translate-x-2 transition-transform rtl:group-hover:translate-x-2">arrow_forward</span>
           </a>
         </div>

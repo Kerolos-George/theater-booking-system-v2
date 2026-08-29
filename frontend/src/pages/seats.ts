@@ -1,5 +1,17 @@
 import { renderNav } from '../components/nav'
 import { MAX_SEATS, SEAT_PRICE } from '../constants'
+import { fetchSeatMap } from '../api/sections.api'
+import { ApiError } from '../api/http'
+import { getSectionId, getSectionSlug, setSelectedSeats } from '../booking/session'
+import { sortSeatLabels } from '../booking/utils'
+import {
+  buildSeatMapFromApi,
+  getAlphabeticalRowGroups,
+  getLayoutForSection,
+  isRowBlockVisible,
+  type RowBlockDefinition,
+  type RowGroupDefinition,
+} from '../seat-layouts'
 
 export type SeatStatus = 'available' | 'selected' | 'booked' | 'unavailable'
 export type SeatSide = 'L' | 'R'
@@ -13,65 +25,8 @@ export interface Seat {
   status: SeatStatus
 }
 
-interface RowConfig {
-  letter: string
-  leftCount: number
-  rightCount: number
-}
-
-const THEATER_ROWS: RowConfig[] = [
-  { letter: 'A', leftCount: 11, rightCount: 11 },
-  { letter: 'B', leftCount: 12, rightCount: 12 },
-  { letter: 'C', leftCount: 7, rightCount: 7 },
-  { letter: 'D', leftCount: 7, rightCount: 7 },
-  { letter: 'E', leftCount: 8, rightCount: 8 },
-  { letter: 'F', leftCount: 8, rightCount: 9 },
-  { letter: 'G', leftCount: 9, rightCount: 9 },
-  { letter: 'H', leftCount: 7, rightCount: 7 },
-  { letter: 'I', leftCount: 5, rightCount: 5 },
-  { letter: 'J', leftCount: 5, rightCount: 4 },
-  { letter: 'K', leftCount: 5, rightCount: 5 },
-  { letter: 'M', leftCount: 3, rightCount: 0 },
-]
-
-function rowCode(letter: string, side: SeatSide): string {
-  return `${letter}${side}`
-}
-
-function initialStatus(code: string, num: number): SeatStatus {
-  const seed = code.charCodeAt(0) * 17 + (code.charCodeAt(1) || 0) * 13 + num * 31
-  if (seed % 11 === 0 || seed % 13 === 0) return 'booked'
-  if (seed % 17 === 0) return 'unavailable'
-  return 'available'
-}
-
 function seatLabel(code: string, number: number): string {
   return `${code}${number}`
-}
-
-export function buildSeatMap(sectionId: string): Seat[] {
-  const seats: Seat[] = []
-
-  for (const { letter, leftCount, rightCount } of THEATER_ROWS) {
-    for (const side of ['L', 'R'] as const) {
-      const count = side === 'L' ? leftCount : rightCount
-      if (count === 0) continue
-
-      const code = rowCode(letter, side)
-      for (let num = 1; num <= count; num++) {
-        seats.push({
-          id: `${sectionId}-${code}${num}`,
-          rowCode: code,
-          letter,
-          side,
-          number: num,
-          status: initialStatus(code, num),
-        })
-      }
-    }
-  }
-
-  return seats
 }
 
 function renderProgress(): string {
@@ -157,30 +112,46 @@ function renderColumnBlock(code: string, side: SeatSide, seats: Seat[]): string 
   `
 }
 
-function renderRow(config: RowConfig, seats: Seat[]): string {
-  const { letter, leftCount, rightCount } = config
-  const leftSeats = seats.filter((s) => s.side === 'L')
-  const rightSeats = seats.filter((s) => s.side === 'R')
-  const leftCode = rowCode(letter, 'L')
-  const rightCode = rowCode(letter, 'R')
+function renderRowGroup(group: RowGroupDefinition, seats: Seat[], rowVisibility?: Record<string, boolean>): string {
+  const leftBlock = group.left
+  const rightBlock = group.right
+  const leftVisible = isRowBlockVisible(leftBlock, rowVisibility)
+  const rightVisible = isRowBlockVisible(rightBlock, rowVisibility)
+
+  if (!leftVisible && !rightVisible) {
+    return ''
+  }
+
+  const leftSeats =
+    leftVisible && leftBlock
+      ? seats.filter((s) => s.rowCode === leftBlock.rowCode).sort((a, b) => a.number - b.number)
+      : []
+  const rightSeats =
+    rightVisible && rightBlock
+      ? seats.filter((s) => s.rowCode === rightBlock.rowCode).sort((a, b) => a.number - b.number)
+      : []
 
   return `
-    <div class="seat-map-row" data-row="${letter}">
-      ${leftCount > 0 ? renderColumnBlock(leftCode, 'L', leftSeats) : '<div class="seat-row-block seat-row-block--empty"></div>'}
+    <div class="seat-map-row" data-row="${group.groupLetter}">
+      ${leftVisible && leftBlock ? renderColumnBlock(leftBlock.rowCode, 'L', leftSeats) : '<div class="seat-row-block seat-row-block--empty"></div>'}
       <div class="seat-aisle" aria-hidden="true">
-        <span class="seat-aisle__label">${letter}</span>
+        <span class="seat-aisle__label">${group.groupLetter}</span>
       </div>
-      ${rightCount > 0 ? renderColumnBlock(rightCode, 'R', rightSeats) : '<div class="seat-row-block seat-row-block--empty"></div>'}
+      ${rightVisible && rightBlock ? renderColumnBlock(rightBlock.rowCode, 'R', rightSeats) : '<div class="seat-row-block seat-row-block--empty"></div>'}
     </div>
   `
 }
 
-function renderColumnHeaders(): string {
+function renderColumnHeaders(sectionId: string): string {
+  const isGround = sectionId !== 'balcony'
+  const leftHint = isGround ? 'PL · OL · …' : 'AL · BL · …'
+  const rightHint = isGround ? '… · OR · PR' : '… · BR · AR'
+
   return `
     <div class="seat-map-row seat-map-row--header mb-sm">
       <div class="seat-row-block seat-row-block--l justify-end">
         <span class="column-header-badge">
-          يسار المسرح · AL BL
+          يسار المسرح · ${leftHint}
           <span class="material-symbols-outlined text-[14px]">chevron_left</span>
         </span>
       </div>
@@ -190,22 +161,18 @@ function renderColumnHeaders(): string {
       <div class="seat-row-block seat-row-block--r justify-start">
         <span class="column-header-badge">
           <span class="material-symbols-outlined text-[14px]">chevron_right</span>
-          يمين المسرح · AR BR
+          يمين المسرح · ${rightHint}
         </span>
       </div>
     </div>
   `
 }
 
-function renderSeatMap(seats: Seat[]): string {
+function renderSeatMap(sectionId: string, seats: Seat[], rowVisibility?: Record<string, boolean>): string {
+  const layout = getLayoutForSection(sectionId)
   return (
-    renderColumnHeaders() +
-    THEATER_ROWS.map((config) =>
-      renderRow(
-        config,
-        seats.filter((s) => s.letter === config.letter),
-      ),
-    ).join('')
+    renderColumnHeaders(sectionId) +
+    getAlphabeticalRowGroups(layout).map((group) => renderRowGroup(group, seats, rowVisibility)).join('')
   )
 }
 
@@ -230,12 +197,13 @@ function renderLegendItem(status: SeatStatus, label: string): string {
 }
 
 function renderSummary(selected: string[]): string {
-  const remaining = MAX_SEATS - selected.length
-  const total = selected.length * SEAT_PRICE
+  const sorted = sortSeatLabels(selected)
+  const remaining = MAX_SEATS - sorted.length
+  const total = sorted.length * SEAT_PRICE
   const chips =
-    selected.length === 0
+    sorted.length === 0
       ? `<span class="font-caption text-caption text-on-surface-variant">لم يتم اختيار مقاعد بعد</span>`
-      : selected
+      : sorted
           .map(
             (label) =>
               `<span class="bg-primary/20 text-primary border border-primary/30 px-sm py-xs rounded-md font-label-md text-label-md">${label}</span>`,
@@ -272,14 +240,15 @@ function renderSummary(selected: string[]): string {
 }
 
 export function renderSeatsPage(): string {
-  const sectionId = sessionStorage.getItem('selectedSection') || 'ground'
-  const seats = buildSeatMap(sectionId)
+  const sectionSlug = getSectionSlug()
 
   return `
     <div class="min-h-screen flex flex-col bg-background text-on-background">
       ${renderNav()}
       <main class="flex-grow w-full max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop py-xl flex flex-col gap-xl">
         ${renderProgress()}
+
+        <div id="seatLoadError" class="hidden bg-error-container/20 border border-error-container text-on-error-container rounded-lg p-md text-center font-body-md"></div>
 
         <div id="seatHoverBar" class="seat-hover-bar" aria-live="polite">
           <span class="material-symbols-outlined text-primary text-[18px]">event_seat</span>
@@ -296,14 +265,13 @@ export function renderSeatsPage(): string {
               ${renderLegendItem('available', 'متاح')}
               ${renderLegendItem('selected', 'مختار')}
               ${renderLegendItem('booked', 'تم حجزه')}
-              ${renderLegendItem('unavailable', 'غير متاح')}
             </div>
 
             <div class="seat-map-viewport relative">
               <div class="seat-map-scroll-fade seat-map-scroll-fade--top" aria-hidden="true"></div>
               <div class="seat-map-scroll overflow-y-auto overflow-x-hidden pb-md max-h-[min(60vh,520px)] md:max-h-[min(65vh,640px)]" id="seatMapScroll">
-                <div class="w-full flex flex-col gap-sm items-stretch py-xs px-xs seat-map-ltr" id="seatMap" data-section="${sectionId}">
-                  ${renderSeatMap(seats)}
+                <div class="w-full flex flex-col gap-sm items-stretch py-xs px-xs seat-map-ltr" id="seatMap" data-section="${sectionSlug}">
+                  <div class="text-center py-xl text-on-surface-variant font-body-md">جاري تحميل المقاعد...</div>
                 </div>
               </div>
               <div class="seat-map-scroll-fade seat-map-scroll-fade--bottom" aria-hidden="true"></div>
@@ -314,7 +282,7 @@ export function renderSeatsPage(): string {
             <div class="pt-md flex flex-col sm:flex-row justify-between items-start sm:items-center gap-sm border-t border-outline-variant/30 shrink-0">
               <span class="font-caption text-caption text-on-surface-variant/60 flex items-center gap-xs">
                 <span class="material-symbols-outlined text-[14px]" aria-hidden="true">update</span>
-                آخر تحديث: منذ دقيقة واحدة
+                يتم تحديث التوفر من الخادم
               </span>
               <span class="font-caption text-caption text-error bg-error/10 px-sm py-xs rounded-md border border-error/20 flex items-center gap-xs">
                 <span class="material-symbols-outlined text-[14px]" aria-hidden="true">info</span>
@@ -333,17 +301,18 @@ export function renderSeatsPage(): string {
 }
 
 function updateSummaryPanel(root: HTMLElement, selected: string[]): void {
+  const sorted = sortSeatLabels(selected)
   const chips = root.querySelector('#selectedChips')
   const hint = root.querySelector('#remainingHint')
   const total = root.querySelector('#totalPrice')
   const btn = root.querySelector<HTMLButtonElement>('#continueSeatsBtn')
-  const remaining = MAX_SEATS - selected.length
+  const remaining = MAX_SEATS - sorted.length
 
   if (chips) {
     chips.innerHTML =
-      selected.length === 0
+      sorted.length === 0
         ? `<span class="font-caption text-caption text-on-surface-variant">لم يتم اختيار مقاعد بعد</span>`
-        : selected
+        : sorted
             .map(
               (label) =>
                 `<span class="bg-primary/20 text-primary border border-primary/30 px-sm py-xs rounded-md font-label-md text-label-md">${label}</span>`,
@@ -359,11 +328,11 @@ function updateSummaryPanel(root: HTMLElement, selected: string[]): void {
   }
 
   if (total) {
-    total.textContent = `${selected.length * SEAT_PRICE} ج.م`
+    total.textContent = `${sorted.length * SEAT_PRICE} ج.م`
   }
 
   if (btn) {
-    btn.disabled = selected.length === 0
+    btn.disabled = sorted.length === 0
   }
 }
 
@@ -423,12 +392,44 @@ function updateScrollFades(scrollEl: HTMLElement): void {
 }
 
 export function bindSeatsPage(root: HTMLElement): void {
+  const sectionId = getSectionId()
+  const sectionSlug = getSectionSlug()
+  const seatMap = root.querySelector('#seatMap')
+  const scrollEl = root.querySelector<HTMLElement>('#seatMapScroll')
+  const errorEl = root.querySelector<HTMLDivElement>('#seatLoadError')
+
+  if (!sectionId) {
+    window.location.hash = '#/sections'
+    return
+  }
+
+  scrollEl?.addEventListener('scroll', () => updateScrollFades(scrollEl), { passive: true })
+
+  void fetchSeatMap(sectionId)
+    .then((data) => {
+      const seats = buildSeatMapFromApi(sectionSlug, data.rows, data.seats)
+      const rowVisibility = Object.fromEntries(data.rows.map((r) => [r.rowCode, r.visible]))
+
+      if (seatMap) {
+        seatMap.innerHTML = renderSeatMap(sectionSlug, seats as Seat[], rowVisibility)
+      }
+
+      if (scrollEl) updateScrollFades(scrollEl)
+      attachSeatInteraction(root)
+    })
+    .catch((err: unknown) => {
+      if (seatMap) seatMap.innerHTML = ''
+      if (errorEl) {
+        errorEl.textContent = err instanceof ApiError ? err.message : 'تعذر تحميل المقاعد'
+        errorEl.classList.remove('hidden')
+      }
+    })
+}
+
+function attachSeatInteraction(root: HTMLElement): void {
   const selected = new Set<string>()
   const seatMap = root.querySelector('#seatMap')
   const scrollEl = root.querySelector<HTMLElement>('#seatMapScroll')
-
-  scrollEl?.addEventListener('scroll', () => updateScrollFades(scrollEl), { passive: true })
-  updateScrollFades(scrollEl ?? root)
 
   seatMap?.addEventListener('mouseover', (event) => {
     const seat = (event.target as HTMLElement).closest<HTMLElement>('.seat-box')
@@ -487,13 +488,13 @@ export function bindSeatsPage(root: HTMLElement): void {
       target.setAttribute('aria-pressed', 'true')
     }
 
-    updateSummaryPanel(root, Array.from(selected).sort())
+    updateSummaryPanel(root, sortSeatLabels(Array.from(selected)))
     updateHoverBar(root, target)
   })
 
   root.querySelector('#continueSeatsBtn')?.addEventListener('click', () => {
     if (selected.size === 0) return
-    sessionStorage.setItem('selectedSeats', JSON.stringify(Array.from(selected).sort()))
+    setSelectedSeats(sortSeatLabels(Array.from(selected)))
     window.location.hash = '#/summary'
   })
 }

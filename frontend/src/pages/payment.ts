@@ -1,19 +1,10 @@
-import { readFileAsDataUrl, submitPaymentProof } from '../bookings'
-import { INSTAPAY, SEAT_PRICE } from '../constants'
+import { fetchBooking, uploadPaymentProof } from '../api/bookings.api'
+import { ApiError } from '../api/http'
+import { getActiveBookingId } from '../booking/session'
+import { INSTAPAY } from '../constants'
 
-function getTotalAmount(): number {
-  try {
-    const raw = sessionStorage.getItem('selectedSeats')
-    if (!raw) return 0
-    const seats = JSON.parse(raw) as unknown
-    return Array.isArray(seats) ? seats.length * SEAT_PRICE : 0
-  } catch {
-    return 0
-  }
-}
-
-function hasBookingData(): boolean {
-  return Boolean(sessionStorage.getItem('bookingDetails') && sessionStorage.getItem('selectedSeats'))
+function hasActiveBooking(): boolean {
+  return Boolean(getActiveBookingId())
 }
 
 function renderHeader(): string {
@@ -102,7 +93,7 @@ function renderEmptyState(): string {
 }
 
 export function renderPaymentPage(): string {
-  if (!hasBookingData()) {
+  if (!hasActiveBooking()) {
     return `
       <div class="min-h-screen flex flex-col bg-background text-on-surface">
         ${renderHeader()}
@@ -112,8 +103,6 @@ export function renderPaymentPage(): string {
       </div>
     `
   }
-
-  const total = getTotalAmount()
 
   return `
     <div class="min-h-screen flex flex-col bg-background text-on-surface antialiased">
@@ -125,10 +114,11 @@ export function renderPaymentPage(): string {
             <h1 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-primary mb-xs">الدفع عبر إنستا باي</h1>
             <p class="font-body-lg text-body-lg text-on-surface-variant">الرجاء إتمام عملية الدفع لتأكيد حجزك.</p>
           </div>
+          <div id="paymentLoadError" class="hidden bg-error-container/20 border border-error-container text-on-error-container rounded-lg p-md mb-lg font-body-md"></div>
           <div class="bg-surface-container-highest rounded-lg p-lg mb-lg border border-outline-variant/30 flex flex-col md:flex-row justify-between items-center gap-4">
             <div class="text-center md:text-right w-full">
               <span class="font-label-md text-label-md text-on-surface-variant block mb-1">إجمالي المبلغ</span>
-              <span class="font-headline-md text-headline-md text-primary font-bold" id="paymentTotal">${total} ج.م</span>
+              <span class="font-headline-md text-headline-md text-primary font-bold" id="paymentTotal">—</span>
             </div>
             <div class="w-px h-12 bg-outline-variant/30 hidden md:block"></div>
             ${renderInstapayBox()}
@@ -194,6 +184,23 @@ async function copyInstapay(text: string, feedback: HTMLElement | null): Promise
 }
 
 export function bindPaymentPage(root: HTMLElement): void {
+  const bookingId = getActiveBookingId()
+  const totalEl = root.querySelector('#paymentTotal')
+  const loadError = root.querySelector<HTMLDivElement>('#paymentLoadError')
+
+  if (bookingId) {
+    void fetchBooking(bookingId)
+      .then((booking) => {
+        if (totalEl) totalEl.textContent = `${booking.totalAmount} ج.م`
+      })
+      .catch((err: unknown) => {
+        if (loadError) {
+          loadError.textContent = err instanceof ApiError ? err.message : 'تعذر تحميل الحجز'
+          loadError.classList.remove('hidden')
+        }
+      })
+  }
+
   const copyBtn = root.querySelector<HTMLButtonElement>('#copyNumberBtn')
   const feedback = root.querySelector('#copyFeedback')
 
@@ -222,26 +229,21 @@ export function bindPaymentPage(root: HTMLElement): void {
 
   confirmBtn?.addEventListener('click', () => {
     const file = fileInput?.files?.[0]
-    if (!file) return
-
-    const bookingRef = sessionStorage.getItem('bookingRef')
-    if (!bookingRef) return
+    const bookingId = getActiveBookingId()
+    if (!file || !bookingId || !confirmBtn) return
 
     confirmBtn.disabled = true
-    confirmBtn.textContent = 'جاري التأكيد...'
+    confirmBtn.textContent = 'جاري رفع الصورة...'
 
-    void readFileAsDataUrl(file)
-      .then((dataUrl) => submitPaymentProof(bookingRef, dataUrl))
-      .then((result) => {
-        if (!result.ok) {
-          confirmBtn.disabled = false
-          confirmBtn.textContent = 'تأكيد الحجز'
-          return
-        }
-        sessionStorage.setItem('paymentSubmitted', 'true')
+    void uploadPaymentProof(bookingId, file)
+      .then(() => {
         window.location.hash = '#/confirmation'
       })
-      .catch(() => {
+      .catch((err: unknown) => {
+        if (loadError) {
+          loadError.textContent = err instanceof ApiError ? err.message : 'فشل رفع الصورة'
+          loadError.classList.remove('hidden')
+        }
         confirmBtn.disabled = false
         confirmBtn.textContent = 'تأكيد الحجز'
       })

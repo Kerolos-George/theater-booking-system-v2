@@ -1,0 +1,134 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum BookingStatus {
+  UNPAID
+  PENDING
+  CONFIRMED
+  CANCELED
+}
+
+enum PaymentUploadJobStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum SectionType {
+  GROUND
+  BALCONY
+}
+
+model User {
+  id        String    @id @default(uuid())
+  name      String
+  mobile    String    @unique
+  password  String
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  bookings  Booking[]
+
+  @@map("users")
+}
+
+model Section {
+  id       String      @id @default(uuid())
+  type     SectionType @unique
+  labelAr  String      @map("label_ar")
+  visible  Boolean     @default(true)
+  price    Int         @default(60)
+  seats    Seat[]
+  rows     TheaterRow[]
+  bookings Booking[]
+
+  @@map("sections")
+}
+
+model TheaterRow {
+  id          String  @id @default(uuid())
+  sectionId   String  @map("section_id")
+  section     Section @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  rowCode     String  @map("row_code")
+  groupLetter String  @map("group_letter")
+  side        String
+  startNumber Int     @map("start_number")
+  endNumber   Int     @map("end_number")
+  sortOrder   Int     @map("sort_order")
+  visible     Boolean @default(true)
+  seats       Seat[]
+
+  @@unique([sectionId, rowCode])
+  @@map("theater_rows")
+}
+
+model Seat {
+  id              String        @id @default(uuid())
+  sectionId       String        @map("section_id")
+  section         Section       @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  theaterRowId    String        @map("theater_row_id")
+  theaterRow      TheaterRow    @relation(fields: [theaterRowId], references: [id], onDelete: Cascade)
+  rowCode         String        @map("row_code")
+  number          Int
+  label           String
+  heldByBookingId String?       @map("held_by_booking_id")
+  heldByBooking   Booking?      @relation("HeldSeats", fields: [heldByBookingId], references: [id], onDelete: SetNull)
+  bookingSeats    BookingSeat[]
+
+  @@unique([sectionId, label])
+  @@map("seats")
+}
+
+model Booking {
+  id              String        @id @default(uuid())
+  ref             String        @unique
+  userId          String        @map("user_id")
+  user            User          @relation(fields: [userId], references: [id])
+  sectionId       String        @map("section_id")
+  section         Section       @relation(fields: [sectionId], references: [id])
+  status          BookingStatus @default(UNPAID)
+  contactName     String        @map("contact_name")
+  whatsapp        String
+  paymentProofUrl String?       @map("payment_proof_url")
+  entryCode       String?       @map("entry_code")
+  totalAmount     Int           @map("total_amount")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+  seats           BookingSeat[]
+  heldSeats       Seat[]        @relation("HeldSeats")
+
+  @@index([userId])
+  @@map("bookings")
+}
+
+model BookingSeat {
+  id           String  @id @default(uuid())
+  bookingId    String  @map("booking_id")
+  booking      Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  seatId       String  @map("seat_id")
+  seat         Seat    @relation(fields: [seatId], references: [id])
+  attendeeName String  @map("attendee_name")
+
+  @@unique([bookingId, seatId])
+  @@map("booking_seats")
+}
+
+model PaymentUploadJob {
+  id        String                 @id @default(uuid())
+  bookingId String                 @unique @map("booking_id")
+  userId    String                 @map("user_id")
+  publicUrl String                 @map("public_url")
+  status    PaymentUploadJobStatus @default(PENDING)
+  attempts  Int                    @default(0)
+  lastError String?                @map("last_error")
+  createdAt DateTime               @default(now()) @map("created_at")
+  updatedAt DateTime               @updatedAt @map("updated_at")
+
+  @@index([status, createdAt])
+  @@map("payment_upload_jobs")
+}
