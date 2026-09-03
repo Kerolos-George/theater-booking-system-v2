@@ -123,13 +123,12 @@ function renderDetailModal(booking: AdminBooking): string {
             <p class="font-body-md">${booking.contactName}</p>
           </div>
           <div>
-            <p class="font-caption text-on-surface-variant">واتساب</p>
-            <p class="font-body-md dir-ltr">${booking.whatsapp}</p>
+            <p class="font-caption text-on-surface-variant">البريد الإلكتروني</p>
+            <p class="font-body-md dir-ltr">${booking.email}</p>
           </div>
           <div>
-            <p class="font-caption text-on-surface-variant">المستخدم (موبايل)</p>
-            <p class="font-body-md">${booking.user.name}</p>
-            <p class="font-body-md dir-ltr text-on-surface-variant">${booking.user.mobile}</p>
+            <p class="font-caption text-on-surface-variant">موبايل المستخدم</p>
+            <p class="font-body-md dir-ltr">${booking.user.mobile}</p>
           </div>
           <div>
             <p class="font-caption text-on-surface-variant">القسم</p>
@@ -178,7 +177,7 @@ function renderDetailModal(booking: AdminBooking): string {
           ${
             canConfirm
               ? `<button type="button" id="confirmBookingBtn" data-id="${booking.id}"
-              class="bg-primary text-on-primary font-label-md px-lg py-sm rounded-lg">تأكيد وإنشاء كود الدخول</button>`
+              class="bg-primary text-on-primary font-label-md px-lg py-sm rounded-lg">تأكيد وإرسال الكود بالبريد</button>`
               : ''
           }
           ${

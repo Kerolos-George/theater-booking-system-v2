@@ -157,24 +157,24 @@ export function renderSummaryPage(): string {
                   </div>
                 </div>
                 <div class="space-y-sm group gold-glow rounded-lg transition-all">
-                  <label class="block font-label-md text-label-md text-on-surface-variant" for="whatsapp">
-                    رقم الواتساب <span class="text-error">*</span>
+                  <label class="block font-label-md text-label-md text-on-surface-variant" for="email">
+                    البريد الإلكتروني <span class="text-error">*</span>
                   </label>
                   <div class="relative">
-                    <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-outline-variant group-focus-within:text-primary transition-colors pointer-events-none">chat</span>
+                    <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-outline-variant group-focus-within:text-primary transition-colors pointer-events-none">mail</span>
                     <input
-                      class="summary-input w-full bg-[#000000] border border-outline-variant rounded-lg py-md pl-md pr-12 text-on-surface focus:outline-none focus:ring-0 text-right transition-colors"
+                      class="summary-input w-full bg-[#000000] border border-outline-variant rounded-lg py-md pl-md pr-12 text-on-surface focus:outline-none focus:ring-0 transition-colors"
                       dir="ltr"
-                      id="whatsapp"
-                      name="whatsapp"
-                      placeholder="01X XXXX XXXX"
-                      type="tel"
+                      id="email"
+                      name="email"
+                      placeholder="example@email.com"
+                      type="email"
                       required
                     />
                   </div>
                   <p class="font-caption text-caption text-primary/80 flex items-center gap-1 mt-1">
                     <span class="material-symbols-outlined text-[14px]">info</span>
-                    سنقوم بإرسال كود الدخول وتفاصيل التذكرة على هذا الرقم
+                    سنرسل كود الدخول وتفاصيل التذكرة على هذا البريد بعد تأكيد الحجز
                   </p>
                 </div>
                 <div class="mt-xl pt-lg border-t border-outline-variant/30">
@@ -227,7 +227,7 @@ export function bindSummaryPage(root: HTMLElement): void {
     event.preventDefault()
 
     const fullName = (form.querySelector('#fullName') as HTMLInputElement).value.trim()
-    const whatsapp = (form.querySelector('#whatsapp') as HTMLInputElement).value.trim()
+    const email = (form.querySelector('#email') as HTMLInputElement).value.trim()
     const seatLabels = getSelectedSeatsList()
     const sectionId = getSectionId()
 
@@ -247,7 +247,7 @@ export function bindSummaryPage(root: HTMLElement): void {
     }
     errorEl?.classList.add('hidden')
 
-    void createBooking({ sectionId, contactName: fullName, whatsapp, seats })
+    void createBooking({ sectionId, contactName: fullName, email, seats })
       .then((booking) => {
         setActiveBooking(booking.id, booking.ref)
         window.location.hash = '#/payment'

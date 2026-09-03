@@ -80,10 +80,10 @@ function renderConfirmationContent(booking: Booking): string {
           </div>
         </div>
         <div class="flex items-start gap-sm md:col-span-2">
-          <span class="material-symbols-outlined text-on-surface-variant mt-1">chat</span>
+          <span class="material-symbols-outlined text-on-surface-variant mt-1">mail</span>
           <div>
-            <p class="font-caption text-caption text-on-surface-variant">واتساب</p>
-            <p class="font-body-md text-body-md text-on-surface font-mono" dir="ltr">${booking.whatsapp}</p>
+            <p class="font-caption text-caption text-on-surface-variant">البريد الإلكتروني</p>
+            <p class="font-body-md text-body-md text-on-surface font-mono" dir="ltr">${booking.email}</p>
           </div>
         </div>
       </div>
@@ -103,10 +103,10 @@ function renderConfirmationContent(booking: Booking): string {
     </div>
 
     <div class="mt-xl max-w-2xl w-full bg-surface-container-high/80 border border-primary/20 rounded-lg p-md flex items-start gap-md">
-      <span class="material-symbols-outlined text-primary text-3xl shrink-0">mark_chat_unread</span>
+      <span class="material-symbols-outlined text-primary text-3xl shrink-0">mail</span>
       <p class="font-body-md text-body-md text-on-surface leading-relaxed">
         <strong class="text-primary">تنبيه هام:</strong>
-        سيتم إرسال كود الدخول والتذاكر الإلكترونية إلى رقم WhatsApp المسجل أعلاه بعد تأكيد الإدارة.
+        سيتم إرسال كود الدخول والتذاكر الإلكترونية إلى البريد الإلكتروني المسجل أعلاه بعد تأكيد الإدارة.
       </p>
     </div>
 

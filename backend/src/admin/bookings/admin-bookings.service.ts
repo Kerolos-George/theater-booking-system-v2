@@ -1,12 +1,9 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { BookingStatus, Prisma } from '@prisma/client';
 import { SECTION_TYPE_REVERSE } from '../../common/constants/theater.constants';
 import { normalizeMobile } from '../../common/utils/mobile.util';
 import { PrismaService } from '../../prisma/prisma.service';
+import { MailService } from '../../mail/mail.service';
 import { generateUniqueEntryCode } from '../utils/entry-code.util';
 import {
   AdminBookingDto,
@@ -24,7 +21,12 @@ type BookingWithRelations = Prisma.BookingGetPayload<{
 
 @Injectable()
 export class AdminBookingsService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(AdminBookingsService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mailService: MailService,
+  ) {}
 
   async list(query: AdminListBookingsQueryDto): Promise<AdminPaginatedBookingsDto> {
     const page = query.page ?? 1;
@@ -120,7 +122,27 @@ export class AdminBookingsService {
       },
     });
 
-    return this.mapBooking(updated);
+    const mapped = this.mapBooking(updated);
+
+    try {
+      await this.mailService.sendBookingConfirmation({
+        to: updated.email,
+        contactName: updated.contactName,
+        userMobile: updated.user.mobile,
+        ref: updated.ref,
+        sectionLabel: updated.section.labelAr,
+        seatCount: updated.seats.length,
+        seats: updated.seats.map((s) => ({
+          label: s.seat.label,
+          attendeeName: s.attendeeName,
+        })),
+        entryCode,
+      });
+    } catch (error) {
+      this.logger.error('Failed to send confirmation email', error);
+    }
+
+    return mapped;
   }
 
   async cancel(bookingId: string): Promise<AdminBookingDto> {
@@ -167,7 +189,7 @@ export class AdminBookingsService {
       ref: booking.ref,
       status: booking.status,
       contactName: booking.contactName,
-      whatsapp: booking.whatsapp,
+      email: booking.email,
       paymentProofUrl: booking.paymentProofUrl,
       entryCode: booking.entryCode,
       entryCodeUsed: booking.entryCodeUsedAt !== null,

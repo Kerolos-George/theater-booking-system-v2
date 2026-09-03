@@ -9,7 +9,7 @@ import {
 import { BookingStatus, PaymentUploadJobStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MAX_SEATS_PER_BOOKING, SECTION_TYPE_REVERSE } from '../../common/constants/theater.constants';
-import { normalizeMobile } from '../../common/utils/mobile.util';
+import { normalizeEmail } from '../../common/utils/email.util';
 import { BookingFlowError } from '../../common/errors/booking-flow.error';
 import { rethrowBookingFlowError } from '../../common/errors/rethrow-booking-flow.error';
 import { withRetry } from '../../common/utils/retry.util';
@@ -56,20 +56,20 @@ export class BookingsService {
       );
     }
 
-    const whatsapp = normalizeMobile(dto.whatsapp);
-    const whatsappBooking = await this.prisma.booking.findFirst({
+    const email = normalizeEmail(dto.email);
+    const emailBooking = await this.prisma.booking.findFirst({
       where: {
-        whatsapp,
+        email,
         status: { not: BookingStatus.CANCELED },
       },
       select: { id: true, userId: true },
     });
 
-    if (whatsappBooking) {
+    if (emailBooking) {
       throw new ConflictException(
-        whatsappBooking.userId === userId
-          ? 'رقم الواتساب مستخدم بالفعل في أحد حجوزاتك النشطة'
-          : 'رقم الواتساب مستخدم بالفعل في حجز نشط آخر',
+        emailBooking.userId === userId
+          ? 'البريد الإلكتروني مستخدم بالفعل في أحد حجوزاتك النشطة'
+          : 'البريد الإلكتروني مستخدم بالفعل في حجز نشط آخر',
       );
     }
 
@@ -128,7 +128,7 @@ export class BookingsService {
               sectionId: section.id,
               status: BookingStatus.UNPAID,
               contactName: dto.contactName.trim(),
-              whatsapp,
+              email,
               totalAmount,
               seats: {
                 create: dto.seats.map((seatInput) => {
@@ -360,7 +360,7 @@ export class BookingsService {
         price: booking.section.price,
       },
       contactName: booking.contactName,
-      whatsapp: booking.whatsapp,
+      email: booking.email,
       paymentProofUrl: booking.paymentProofUrl,
       entryCode: booking.entryCode,
       totalAmount: booking.totalAmount,

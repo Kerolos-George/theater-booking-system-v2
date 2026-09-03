@@ -61,7 +61,7 @@ export interface Booking {
     price: number
   }
   contactName: string
-  whatsapp: string
+  email: string
   paymentProofUrl: string | null
   entryCode: string | null
   totalAmount: number
@@ -74,7 +74,7 @@ export interface Booking {
 export interface CreateBookingPayload {
   sectionId: string
   contactName: string
-  whatsapp: string
+  email: string
   seats: BookingSeat[]
 }
 

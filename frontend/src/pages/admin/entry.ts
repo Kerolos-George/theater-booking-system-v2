@@ -63,11 +63,11 @@ function renderBookingDetails(booking: AdminBooking): string {
           <p class="font-body-md">${booking.contactName}</p>
         </div>
         <div>
-          <p class="font-caption text-on-surface-variant">واتساب</p>
-          <p class="font-body-md dir-ltr">${booking.whatsapp}</p>
+          <p class="font-caption text-on-surface-variant">البريد الإلكتروني</p>
+          <p class="font-body-md dir-ltr">${booking.email}</p>
         </div>
         <div>
-          <p class="font-caption text-on-surface-variant">المستخدم</p>
+          <p class="font-caption text-on-surface-variant">موبايل المستخدم</p>
           <p class="font-body-md">${booking.user.name}</p>
           <p class="font-body-md dir-ltr text-on-surface-variant">${booking.user.mobile}</p>
         </div>

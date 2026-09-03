@@ -106,7 +106,7 @@ function renderBookingCard(booking: Booking): string {
         <span class="material-symbols-outlined text-tertiary-container shrink-0">hourglass_top</span>
         <div>
           <p class="font-body-md text-body-md text-on-surface mb-xs">في انتظار تأكيد الإدارة</p>
-          <p class="font-caption text-caption text-on-surface-variant">تم استلام إثبات الدفع. سيتم مراجعة طلبك وإرسال كود الدخول على واتساب بعد التأكيد.</p>
+          <p class="font-caption text-caption text-on-surface-variant">تم استلام إثبات الدفع. سيتم مراجعة طلبك وإرسال كود الدخول على بريدك الإلكتروني بعد التأكيد.</p>
         </div>
       </div>
     `
@@ -115,10 +115,10 @@ function renderBookingCard(booking: Booking): string {
       <div class="mt-md bg-primary/10 border border-primary/30 rounded-lg p-md">
         <div class="flex items-center gap-sm mb-sm">
           <span class="material-symbols-outlined text-primary filled">mark_chat_unread</span>
-          <p class="font-label-md text-label-md text-primary">كود الدخول (واتساب)</p>
+          <p class="font-label-md text-label-md text-primary">كود الدخول</p>
         </div>
         <p class="font-display-lg text-display-lg text-primary font-mono tracking-widest text-center py-sm" dir="ltr">${booking.entryCode ?? '—'}</p>
-        <p class="font-caption text-caption text-on-surface-variant text-center mt-xs">تم إرسال هذا الكود أيضاً إلى رقم واتساب المسجل</p>
+        <p class="font-caption text-caption text-on-surface-variant text-center mt-xs">تم إرسال هذا الكود أيضاً إلى بريدك الإلكتروني</p>
       </div>
     `
   }
@@ -150,8 +150,8 @@ function renderBookingCard(booking: Booking): string {
           <p class="font-body-md text-body-md text-on-surface">${booking.contactName}</p>
         </div>
         <div>
-          <p class="font-caption text-caption text-on-surface-variant">واتساب</p>
-          <p class="font-body-md text-body-md text-on-surface font-mono" dir="ltr">${booking.whatsapp}</p>
+          <p class="font-caption text-caption text-on-surface-variant">البريد الإلكتروني</p>
+          <p class="font-body-md text-body-md text-on-surface font-mono" dir="ltr">${booking.email}</p>
         </div>
       </div>
       <div class="flex justify-between items-center pt-md border-t border-outline-variant/20">

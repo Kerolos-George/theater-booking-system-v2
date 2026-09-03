@@ -104,7 +104,7 @@ model Booking {
   section         Section       @relation(fields: [sectionId], references: [id])
   status          BookingStatus @default(UNPAID)
   contactName     String        @map("contact_name")
-  whatsapp        String
+  email           String
   paymentProofUrl String?       @map("payment_proof_url")
   entryCode       String?       @map("entry_code")
   entryCodeUsedAt DateTime?     @map("entry_code_used_at")
@@ -115,7 +115,7 @@ model Booking {
   heldSeats       Seat[]        @relation("HeldSeats")
 
   @@index([userId])
-  @@index([whatsapp])
+  @@index([email])
   @@index([entryCode])
   @@map("bookings")
 }

@@ -4,6 +4,7 @@ import {
   ArrayMaxSize,
   ArrayMinSize,
   IsArray,
+  IsEmail,
   IsNotEmpty,
   IsString,
   IsUUID,
@@ -33,10 +34,9 @@ export class CreateBookingDto {
   @IsNotEmpty()
   contactName: string;
 
-  @ApiProperty({ example: '01012345678' })
-  @IsString()
-  @IsNotEmpty()
-  whatsapp: string;
+  @ApiProperty({ example: 'guest@example.com', description: 'Email to receive entry code' })
+  @IsEmail({}, { message: 'يرجى إدخال بريد إلكتروني صحيح' })
+  email: string;
 
   @ApiProperty({ type: [BookingSeatInputDto], maxItems: MAX_SEATS_PER_BOOKING })
   @IsArray()
@@ -86,12 +86,12 @@ export class BookingResponseDto {
   contactName: string;
 
   @ApiProperty()
-  whatsapp: string;
+  email: string;
 
   @ApiProperty({ nullable: true })
   paymentProofUrl: string | null;
 
-  @ApiProperty({ nullable: true, description: 'WhatsApp entry code when confirmed' })
+  @ApiProperty({ nullable: true, description: 'Entry code sent by email when confirmed' })
   entryCode: string | null;
 
   @ApiProperty()
