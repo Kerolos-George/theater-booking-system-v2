@@ -22,6 +22,6 @@ export const SECTION_LABELS: Record<string, string> = {
 
 export const INSTAPAY = {
   address: 'theater.premiere@instapay',
-  number: '01012345678',
-  ownerName: 'بريميير ثياتر',
+  number: '01276220412',
+  ownerName: 'mina samy',
 } as const
