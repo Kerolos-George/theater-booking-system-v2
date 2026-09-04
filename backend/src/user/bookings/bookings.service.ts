@@ -8,8 +8,9 @@ import {
 } from '@nestjs/common';
 import { BookingStatus, PaymentUploadJobStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { MAX_SEATS_PER_BOOKING, SECTION_TYPE_REVERSE } from '../../common/constants/theater.constants';
+import { MAX_SEATS_PER_BOOKING, SECTION_TYPE_REVERSE, calculateBookingTotal } from '../../common/constants/theater.constants';
 import { normalizeEmail } from '../../common/utils/email.util';
+import { normalizeMobile } from '../../common/utils/mobile.util';
 import { BookingFlowError } from '../../common/errors/booking-flow.error';
 import { rethrowBookingFlowError } from '../../common/errors/rethrow-booking-flow.error';
 import { withRetry } from '../../common/utils/retry.util';
@@ -119,7 +120,7 @@ export class BookingsService {
           }
 
           const ref = this.generateRef();
-          const totalAmount = lockedSeats.length * section.price;
+          const totalAmount = calculateBookingTotal(lockedSeats.length, section.price);
 
           const created = await tx.booking.create({
             data: {
@@ -129,6 +130,7 @@ export class BookingsService {
               status: BookingStatus.UNPAID,
               contactName: dto.contactName.trim(),
               email,
+              whatsapp: normalizeMobile(dto.whatsapp),
               totalAmount,
               seats: {
                 create: dto.seats.map((seatInput) => {
@@ -361,6 +363,7 @@ export class BookingsService {
       },
       contactName: booking.contactName,
       email: booking.email,
+      whatsapp: booking.whatsapp,
       paymentProofUrl: booking.paymentProofUrl,
       entryCode: booking.entryCode,
       totalAmount: booking.totalAmount,

@@ -16,7 +16,7 @@ export class SectionResponseDto {
   @ApiProperty()
   visible: boolean;
 
-  @ApiProperty({ example: 60 })
+  @ApiProperty({ example: 75 })
   price: number;
 }
 

@@ -79,11 +79,18 @@ function renderConfirmationContent(booking: Booking): string {
             <p class="font-body-md text-body-md text-on-surface">${booking.contactName}</p>
           </div>
         </div>
-        <div class="flex items-start gap-sm md:col-span-2">
+        <div class="flex items-start gap-sm">
           <span class="material-symbols-outlined text-on-surface-variant mt-1">mail</span>
           <div>
             <p class="font-caption text-caption text-on-surface-variant">البريد الإلكتروني</p>
             <p class="font-body-md text-body-md text-on-surface font-mono" dir="ltr">${booking.email}</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-sm">
+          <span class="material-symbols-outlined text-on-surface-variant mt-1">chat</span>
+          <div>
+            <p class="font-caption text-caption text-on-surface-variant">واتساب</p>
+            <p class="font-body-md text-body-md text-on-surface font-mono" dir="ltr">${booking.whatsapp}</p>
           </div>
         </div>
       </div>

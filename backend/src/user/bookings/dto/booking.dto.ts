@@ -38,6 +38,11 @@ export class CreateBookingDto {
   @IsEmail({}, { message: 'يرجى إدخال بريد إلكتروني صحيح' })
   email: string;
 
+  @ApiProperty({ example: '01012345678', description: 'WhatsApp number for contact' })
+  @IsString()
+  @IsNotEmpty()
+  whatsapp: string;
+
   @ApiProperty({ type: [BookingSeatInputDto], maxItems: MAX_SEATS_PER_BOOKING })
   @IsArray()
   @ArrayMinSize(1)
@@ -87,6 +92,9 @@ export class BookingResponseDto {
 
   @ApiProperty()
   email: string;
+
+  @ApiProperty()
+  whatsapp: string;
 
   @ApiProperty({ nullable: true })
   paymentProofUrl: string | null;

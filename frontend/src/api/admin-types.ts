@@ -22,6 +22,7 @@ export interface AdminBooking {
   status: ApiBookingStatus
   contactName: string
   email: string
+  whatsapp: string
   paymentProofUrl: string | null
   entryCode: string | null
   entryCodeUsed: boolean

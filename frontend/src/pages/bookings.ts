@@ -153,6 +153,10 @@ function renderBookingCard(booking: Booking): string {
           <p class="font-caption text-caption text-on-surface-variant">البريد الإلكتروني</p>
           <p class="font-body-md text-body-md text-on-surface font-mono" dir="ltr">${booking.email}</p>
         </div>
+        <div>
+          <p class="font-caption text-caption text-on-surface-variant">واتساب</p>
+          <p class="font-body-md text-body-md text-on-surface font-mono" dir="ltr">${booking.whatsapp}</p>
+        </div>
       </div>
       <div class="flex justify-between items-center pt-md border-t border-outline-variant/20">
         <span class="font-label-md text-label-md text-on-surface-variant">الإجمالي</span>

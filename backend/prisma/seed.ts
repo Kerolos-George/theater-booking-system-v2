@@ -77,8 +77,8 @@ async function seedSeatsForRow(
 async function seedSection(type: SectionType, labelAr: string, visible: boolean, layout: SectionLayoutDefinition) {
   const section = await prisma.section.upsert({
     where: { type },
-    update: { labelAr, visible },
-    create: { type, labelAr, visible, price: 60 },
+    update: { labelAr, visible, price: 75 },
+    create: { type, labelAr, visible, price: 75 },
   });
 
   const validLabels = new Set<string>();

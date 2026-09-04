@@ -59,6 +59,9 @@ export class AdminBookingDto {
   @ApiProperty()
   email: string;
 
+  @ApiProperty()
+  whatsapp: string;
+
   @ApiProperty({ nullable: true })
   paymentProofUrl: string | null;
 

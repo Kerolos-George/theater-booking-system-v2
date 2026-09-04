@@ -6,6 +6,7 @@ export interface BookingConfirmationEmailPayload {
   to: string;
   contactName: string;
   userMobile: string;
+  whatsapp: string;
   ref: string;
   sectionLabel: string;
   seatCount: number;
@@ -55,6 +56,7 @@ export class MailService {
         <table style="width:100%;margin:16px 0;border-collapse:collapse;font-size:14px;">
           <tr><td style="padding:6px 0;color:#aaa;">رقم الحجز</td><td style="padding:6px 0;"><strong>${payload.ref}</strong></td></tr>
           <tr><td style="padding:6px 0;color:#aaa;">رقم الموبايل</td><td style="padding:6px 0;direction:ltr;text-align:right;">${payload.userMobile}</td></tr>
+          <tr><td style="padding:6px 0;color:#aaa;">واتساب</td><td style="padding:6px 0;direction:ltr;text-align:right;">${payload.whatsapp}</td></tr>
           <tr><td style="padding:6px 0;color:#aaa;">القسم</td><td style="padding:6px 0;">${payload.sectionLabel}</td></tr>
           <tr><td style="padding:6px 0;color:#aaa;">عدد المقاعد</td><td style="padding:6px 0;">${payload.seatCount}</td></tr>
         </table>

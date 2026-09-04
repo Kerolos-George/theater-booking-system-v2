@@ -127,6 +127,10 @@ function renderDetailModal(booking: AdminBooking): string {
             <p class="font-body-md dir-ltr">${booking.email}</p>
           </div>
           <div>
+            <p class="font-caption text-on-surface-variant">واتساب</p>
+            <p class="font-body-md dir-ltr">${booking.whatsapp}</p>
+          </div>
+          <div>
             <p class="font-caption text-on-surface-variant">موبايل المستخدم</p>
             <p class="font-body-md dir-ltr">${booking.user.mobile}</p>
           </div>

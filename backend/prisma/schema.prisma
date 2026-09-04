@@ -53,7 +53,7 @@ model Section {
   type     SectionType @unique
   labelAr  String      @map("label_ar")
   visible  Boolean     @default(true)
-  price    Int         @default(60)
+  price    Int         @default(75)
   seats    Seat[]
   rows     TheaterRow[]
   bookings Booking[]
@@ -105,6 +105,7 @@ model Booking {
   status          BookingStatus @default(UNPAID)
   contactName     String        @map("contact_name")
   email           String
+  whatsapp        String
   paymentProofUrl String?       @map("payment_proof_url")
   entryCode       String?       @map("entry_code")
   entryCodeUsedAt DateTime?     @map("entry_code_used_at")

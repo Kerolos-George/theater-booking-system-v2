@@ -2,7 +2,7 @@ import { createBooking } from '../api/bookings.api'
 import { ApiError } from '../api/http'
 import { getSectionId, getSectionSlug, getSelectedSeats, setActiveBooking } from '../booking/session'
 import { renderNav } from '../components/nav'
-import { SECTION_LABELS, SEAT_PRICE } from '../constants'
+import { SECTION_LABELS, SEAT_PRICE, calculateBookingTotal, FULL_PACKAGE_SEATS, MAX_SEATS } from '../constants'
 
 function getSelectedSeatsList(): string[] {
   return getSelectedSeats()
@@ -79,8 +79,9 @@ function renderEmptyState(): string {
 export function renderSummaryPage(): string {
   const seats = getSelectedSeatsList()
   const sectionTitle = getSectionTitle()
-  const total = seats.length * SEAT_PRICE
+  const total = calculateBookingTotal(seats.length)
   const ticketWord = seats.length === 1 ? 'تذكرة' : 'تذاكر'
+  const hasOffer = seats.length >= FULL_PACKAGE_SEATS
 
   if (seats.length === 0) {
     return `
@@ -130,6 +131,14 @@ export function renderSummaryPage(): string {
                   <span>سعر التذكرة:</span>
                   <span>${SEAT_PRICE} ج.م</span>
                 </div>
+                ${
+                  hasOffer
+                    ? `<div class="flex justify-between items-center text-primary font-body-md">
+                  <span>عرض ${FULL_PACKAGE_SEATS} مقاعد:</span>
+                  <span>تدفع سعر 10 فقط</span>
+                </div>`
+                    : ''
+                }
                 <div class="flex justify-between items-center font-headline-md text-headline-md text-primary">
                   <span>الإجمالي:</span>
                   <span id="summaryTotal">${total} ج.م</span>
@@ -177,6 +186,27 @@ export function renderSummaryPage(): string {
                     سنرسل كود الدخول وتفاصيل التذكرة على هذا البريد بعد تأكيد الحجز
                   </p>
                 </div>
+                <div class="space-y-sm group gold-glow rounded-lg transition-all">
+                  <label class="block font-label-md text-label-md text-on-surface-variant" for="whatsapp">
+                    رقم الواتساب <span class="text-error">*</span>
+                  </label>
+                  <div class="relative">
+                    <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-outline-variant group-focus-within:text-primary transition-colors pointer-events-none">chat</span>
+                    <input
+                      class="summary-input w-full bg-[#000000] border border-outline-variant rounded-lg py-md pl-md pr-12 text-on-surface focus:outline-none focus:ring-0 transition-colors"
+                      dir="ltr"
+                      id="whatsapp"
+                      name="whatsapp"
+                      placeholder="01X XXXX XXXX"
+                      type="tel"
+                      required
+                    />
+                  </div>
+                  <p class="font-caption text-caption text-on-surface-variant/80 flex items-center gap-1 mt-1">
+                    <span class="material-symbols-outlined text-[14px]">info</span>
+                    للتواصل بشأن الحجز عند الحاجة
+                  </p>
+                </div>
                 <div class="mt-xl pt-lg border-t border-outline-variant/30">
                   <h3 class="font-label-md text-label-md text-on-surface-variant mb-md">أسماء الحضور (لكل تذكرة)</h3>
                   <div class="space-y-md">
@@ -191,6 +221,9 @@ export function renderSummaryPage(): string {
                     متابعة للدفع
                     <span class="material-symbols-outlined rtl:-scale-x-100">arrow_forward</span>
                   </button>
+                  <p class="font-caption text-caption text-on-surface-variant text-center mt-md leading-relaxed">
+                    ملاحظة: يمكنك حجز حتى ${MAX_SEATS} مقاعد. عند حجز ${FULL_PACKAGE_SEATS} مقعد تحصل على عرض: تدفع سعر 10 تذاكر فقط (${SEAT_PRICE * 10} ج.م بدلاً من ${SEAT_PRICE * FULL_PACKAGE_SEATS} ج.م).
+                  </p>
                 </div>
               </form>
             </div>
@@ -228,6 +261,7 @@ export function bindSummaryPage(root: HTMLElement): void {
 
     const fullName = (form.querySelector('#fullName') as HTMLInputElement).value.trim()
     const email = (form.querySelector('#email') as HTMLInputElement).value.trim()
+    const whatsapp = (form.querySelector('#whatsapp') as HTMLInputElement).value.trim()
     const seatLabels = getSelectedSeatsList()
     const sectionId = getSectionId()
 
@@ -247,7 +281,7 @@ export function bindSummaryPage(root: HTMLElement): void {
     }
     errorEl?.classList.add('hidden')
 
-    void createBooking({ sectionId, contactName: fullName, email, seats })
+    void createBooking({ sectionId, contactName: fullName, email, whatsapp, seats })
       .then((booking) => {
         setActiveBooking(booking.id, booking.ref)
         window.location.hash = '#/payment'

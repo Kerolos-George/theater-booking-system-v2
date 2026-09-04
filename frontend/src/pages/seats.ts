@@ -1,5 +1,5 @@
 import { renderNav } from '../components/nav'
-import { MAX_SEATS, SEAT_PRICE } from '../constants'
+import { MAX_SEATS, SEAT_PRICE, calculateBookingTotal, FULL_PACKAGE_SEATS } from '../constants'
 import { fetchSeatMap } from '../api/sections.api'
 import { ApiError } from '../api/http'
 import { getSectionId, getSectionSlug, setSelectedSeats } from '../booking/session'
@@ -199,7 +199,8 @@ function renderLegendItem(status: SeatStatus, label: string): string {
 function renderSummary(selected: string[]): string {
   const sorted = sortSeatLabels(selected)
   const remaining = MAX_SEATS - sorted.length
-  const total = sorted.length * SEAT_PRICE
+  const total = calculateBookingTotal(sorted.length)
+  const hasOffer = sorted.length >= FULL_PACKAGE_SEATS
   const chips =
     sorted.length === 0
       ? `<span class="font-caption text-caption text-on-surface-variant">لم يتم اختيار مقاعد بعد</span>`
@@ -226,6 +227,9 @@ function renderSummary(selected: string[]): string {
         <span class="font-body-lg text-body-lg text-on-surface">الإجمالي:</span>
         <span class="font-headline-lg text-headline-lg text-primary tracking-tight" id="totalPrice">${total} ج.م</span>
       </div>
+      <p id="offerHint" class="font-caption text-caption text-primary ${hasOffer ? '' : 'hidden'}">
+        عرض خاص: حجز ${FULL_PACKAGE_SEATS} مقاعد = سعر 10 تذاكر فقط
+      </p>
       <button
         type="button"
         id="continueSeatsBtn"
@@ -235,6 +239,9 @@ function renderSummary(selected: string[]): string {
         متابعة
         <span class="material-symbols-outlined group-hover:-translate-x-1 transition-transform" aria-hidden="true">arrow_back</span>
       </button>
+      <p class="font-caption text-caption text-on-surface-variant text-center leading-relaxed">
+        ملاحظة: الحد الأقصى ${MAX_SEATS} مقاعد. عند حجز ${FULL_PACKAGE_SEATS} مقعد تدفع سعر 10 فقط (${SEAT_PRICE * 10} ج.م بدلاً من ${SEAT_PRICE * FULL_PACKAGE_SEATS} ج.م).
+      </p>
     </div>
   `
 }
@@ -328,7 +335,12 @@ function updateSummaryPanel(root: HTMLElement, selected: string[]): void {
   }
 
   if (total) {
-    total.textContent = `${sorted.length * SEAT_PRICE} ج.م`
+    total.textContent = `${calculateBookingTotal(sorted.length)} ج.م`
+  }
+
+  const offerHint = root.querySelector('#offerHint')
+  if (offerHint) {
+    offerHint.classList.toggle('hidden', sorted.length < FULL_PACKAGE_SEATS)
   }
 
   if (btn) {
