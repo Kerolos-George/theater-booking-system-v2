@@ -4,14 +4,19 @@ import { renderNav } from '../components/nav'
 const HERO_IMAGE =
   'https://lh3.googleusercontent.com/aida-public/AB6AXuBCEcKYynihGtuUYDZ_utKip7kchfcmj08G-cvLvogpVI7c-xebl394nyToMtZz1GkiFRbyvf1S0VTU4Xf1mIrMP7RFfFGwJcB7eYJhVpJseQNjTkVw_gnY3bNvjkr8Vv_0ktZUSWXKWsLO9vDZaOWd6nsUnN2-MkVGXIH33Bmy6KoHkohqh3a-NZAiHgdLpYuL26EWHe3dVIDtHx7C71LrTm6E74pP4g9N-EPMCIlBH7Jg0A2G8r14kQ'
 
-const bookingSteps = [
+const bookingSteps: Array<{
+  step: number
+  icon: string
+  title: string
+  wide?: boolean
+}> = [
   { step: 1, icon: 'weekend', title: 'اختر القسم المناسب' },
   { step: 2, icon: 'event_seat', title: 'حدد مقاعدك المفضلة' },
   { step: 3, icon: 'edit_document', title: 'أدخل بيانات الحضور' },
   { step: 4, icon: 'payments', title: 'ادفع عبر إنستا باي' },
   { step: 5, icon: 'upload_file', title: 'ارفع إثبات الدفع' },
   { step: 6, icon: 'verified', title: 'انتظر تأكيد الحجز', wide: true },
-] as const
+]
 
 function renderHero(): string {
   const loggedIn = isLoggedIn()
@@ -58,20 +63,21 @@ function renderHero(): string {
 
 function renderSteps(): string {
   const cards = bookingSteps
-    .map(
-      ({ step, icon, title, wide }) => `
-      <div class="glass-panel p-lg rounded-xl flex flex-col items-start gap-md relative overflow-hidden group hover:border-primary/50 transition-colors duration-300 ${wide ? 'lg:col-span-1 md:col-span-2' : ''}">
+    .map((item) => {
+      const wideClass = item.wide ? 'lg:col-span-1 md:col-span-2' : ''
+      return `
+      <div class="glass-panel p-lg rounded-xl flex flex-col items-start gap-md relative overflow-hidden group hover:border-primary/50 transition-colors duration-300 ${wideClass}">
         <div class="absolute -right-8 -top-8 w-32 h-32 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-colors"></div>
         <div class="bg-surface-container-highest p-sm rounded-lg text-primary">
-          <span class="material-symbols-outlined text-[32px]">${icon}</span>
+          <span class="material-symbols-outlined text-[32px]">${item.icon}</span>
         </div>
         <div>
-          <div class="font-label-md text-label-md text-primary mb-xs">الخطوة ${step}</div>
-          <h3 class="font-headline-md text-body-lg md:text-headline-md text-on-surface">${title}</h3>
+          <div class="font-label-md text-label-md text-primary mb-xs">الخطوة ${item.step}</div>
+          <h3 class="font-headline-md text-body-lg md:text-headline-md text-on-surface">${item.title}</h3>
         </div>
       </div>
-    `,
-    )
+    `
+    })
     .join('')
 
   return `
