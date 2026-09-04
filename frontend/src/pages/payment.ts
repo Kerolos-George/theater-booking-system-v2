@@ -202,7 +202,7 @@ export function bindPaymentPage(root: HTMLElement): void {
   }
 
   const copyBtn = root.querySelector<HTMLButtonElement>('#copyNumberBtn')
-  const feedback = root.querySelector('#copyFeedback')
+  const feedback = root.querySelector<HTMLElement>('#copyFeedback')
 
   copyBtn?.addEventListener('click', (event) => {
     event.stopPropagation()

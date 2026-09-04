@@ -9,7 +9,6 @@ import {
   getAlphabeticalRowGroups,
   getLayoutForSection,
   isRowBlockVisible,
-  type RowBlockDefinition,
   type RowGroupDefinition,
 } from '../seat-layouts'
 
@@ -441,7 +440,6 @@ export function bindSeatsPage(root: HTMLElement): void {
 function attachSeatInteraction(root: HTMLElement): void {
   const selected = new Set<string>()
   const seatMap = root.querySelector('#seatMap')
-  const scrollEl = root.querySelector<HTMLElement>('#seatMapScroll')
 
   seatMap?.addEventListener('mouseover', (event) => {
     const seat = (event.target as HTMLElement).closest<HTMLElement>('.seat-box')
